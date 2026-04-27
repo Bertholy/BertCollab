@@ -1,0 +1,257 @@
+/* ============================================
+   CONTENEUR PRINCIPAL
+   ============================================ */
+
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #0f172a;
+}
+
+/* ============================================
+   HEADER DE L'ÉDITEUR
+   ============================================ */
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: rgba(15, 23, 42, 0.9);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-back {
+  padding: 0.5rem 1rem;
+  background-color: rgba(51, 65, 85, 0.5);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.btn-back:hover {
+  background-color: rgba(51, 65, 85, 0.8);
+  border-color: #06b6d4;
+}
+
+.editor-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Avatars des utilisateurs */
+.users-online {
+  display: flex;
+  gap: -0.5rem;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  border: 2px solid #0f172a;
+  margin-left: -0.5rem;
+  font-size: 0.875rem;
+}
+
+.user-avatar:first-child {
+  margin-left: 0;
+}
+
+/* ============================================
+   ZONE D'ÉDITION PRINCIPALE
+   ============================================ */
+
+.editor-main {
+  display: flex;
+  flex: 1;
+  gap: 1rem;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+/* ============================================
+   TEXTAREA (ÉDITEUR DE TEXTE)
+   ============================================ */
+
+.editor-textarea {
+  flex: 1;
+  padding: 1.5rem;
+  background-color: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 1rem;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.editor-textarea:focus {
+  border-color: #06b6d4;
+  background-color: rgba(30, 41, 59, 0.6);
+}
+
+.editor-textarea::placeholder {
+  color: #64748b;
+}
+
+/* ============================================
+   PANNEAU LATÉRAL
+   ============================================ */
+
+.editor-sidebar {
+  width: 250px;
+  padding: 1.5rem;
+  background-color: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(71, 85, 105, 0.5);
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
+.sidebar-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+/* Liste des utilisateurs */
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background-color: rgba(51, 65, 85, 0.3);
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.user-item:hover {
+  background-color: rgba(51, 65, 85, 0.5);
+}
+
+.user-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.user-name {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+/* Stats du document */
+.document-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: rgba(51, 65, 85, 0.3);
+  border-radius: 6px;
+}
+
+.stat-label {
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.stat-value {
+  color: #06b6d4;
+  font-weight: 600;
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+
+.editor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: rgba(15, 23, 42, 0.9);
+  border-top: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+.status {
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+.btn-save {
+  padding: 0.75rem 1.5rem;
+  background-color: #06b6d4;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.btn-save:hover {
+  background-color: #0891b2;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .editor-main {
+    flex-direction: column;
+  }
+
+  .editor-sidebar {
+    width: 100%;
+  }
+
+  .editor-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .header-right {
+    width: 100%;
+  }
+}
