@@ -55,6 +55,11 @@ app.get('/', (req, res) => {
 });
 
 // ============================================
+// STOCKAGE DES UTILISATEURS PAR SALLE
+// ============================================
+const roomUsers = {}; // Structure: { roomId: { socketId: username } }
+
+// ============================================
 // QUAND UN UTILISATEUR SE CONNECTE
 // ============================================
 // 'connection' = événement qui se déclenche quand un utilisateur se connecte
@@ -66,18 +71,22 @@ io.on('connection', (socket) => {
   // ============================================
   // Quand un utilisateur clique "Ouvrir le groupe"
   socket.on('join-room', (data) => {
-    const { roomId } = data;  // Récupérer l'ID du groupe
+    const { roomId, username } = data;  // Récupérer l'ID du groupe et le pseudo
     
     // Rejoindre la salle Socket.io
     socket.join(roomId);
     
-    console.log(`📍 ${socket.id} a rejoint la salle ${roomId}`);
-    
-    // Dire aux autres dans la salle que quelqu'un a rejoint
-    socket.to(roomId).emit('user-joined', {
-      userId: socket.id,
-      message: `Un utilisateur a rejoint`
-    });
+    // Ajouter l'utilisateur à la salle
+    if (!roomUsers[roomId]) roomUsers[roomId] = {};
+    roomUsers[roomId][socket.id] = username || 'Anonyme';
+
+    console.log(`📍 ${socket.id} (${username}) a rejoint la salle ${roomId}`);
+
+    // Préparer la liste structurée des utilisateurs
+    const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, name]) => ({ id, name }));
+
+    // Envoyer la liste mise à jour à tout le monde dans la salle
+    io.to(roomId).emit('update-user-list', usersInRoom);
   });
 
   // ============================================
@@ -107,13 +116,15 @@ io.on('connection', (socket) => {
     const { roomId } = data;
     
     socket.leave(roomId);
+
+    if (roomUsers[roomId]) {
+      delete roomUsers[roomId][socket.id];
+      // Notifier les autres avec la liste mise à jour
+      const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, name]) => ({ id, name }));
+      io.to(roomId).emit('update-user-list', usersInRoom);
+    }
+
     console.log(`🚪 ${socket.id} a quitté la salle ${roomId}`);
-    
-    // Dire aux autres que quelqu'un a quitté
-    socket.to(roomId).emit('user-left', {
-      userId: socket.id,
-      message: `Un utilisateur a quitté`
-    });
   });
 
   // ============================================
@@ -121,6 +132,14 @@ io.on('connection', (socket) => {
   // ============================================
   // Quand l'utilisateur ferme le navigateur ou l'app
   socket.on('disconnect', () => {
+    // Nettoyer l'utilisateur de toutes les salles
+    for (const roomId in roomUsers) {
+      if (roomUsers[roomId][socket.id]) {
+        delete roomUsers[roomId][socket.id];
+        const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, name]) => ({ id, name }));
+        io.to(roomId).emit('update-user-list', usersInRoom);
+      }
+    }
     console.log(`❌ ${socket.id} s'est déconnecté`);
   });
 });

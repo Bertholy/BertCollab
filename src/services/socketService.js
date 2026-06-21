@@ -37,6 +37,7 @@ export const connectSocket = (serverURL = 'http://localhost:3001') => {
       console.log('❌ Déconnecté de Socket.io');
     });
 
+    window.socketInstance = socket;
     return socket;
   } catch (err) {
     console.error('Erreur connexion Socket:', err);
@@ -49,10 +50,10 @@ export const connectSocket = (serverURL = 'http://localhost:3001') => {
 // ============================================
 // Quand tu ouvres un groupe, tu rejoins une "salle"
 // Tous les utilisateurs dans la même salle voient les mêmes changements
-export const joinRoom = (roomId) => {
+export const joinRoom = (roomId, username) => {
   if (socket) {
     // Envoyer un message au serveur: "Je rejoins cette salle"
-    socket.emit('join-room', { roomId });
+    socket.emit('join-room', { roomId, username });
     console.log(`📍 Rejoint la salle: ${roomId}`);
   }
 };
@@ -93,6 +94,19 @@ export const onTextUpdate = (callback) => {
     socket.on('text-update', (data) => {
       // Appeler la fonction callback avec les données
       callback(data);
+    });
+  }
+};
+
+// ============================================
+// FONCTION: ÉCOUTER LA LISTE DES UTILISATEURS
+// ============================================
+// Reçoit la liste complète des pseudos connectés à la salle
+export const onUpdateUserList = (callback) => {
+  if (socket) {
+    socket.on('update-user-list', (users) => {
+      console.log('👥 Liste des utilisateurs mise à jour:', users);
+      callback(users);
     });
   }
 };

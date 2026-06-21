@@ -92,6 +92,22 @@
   overflow: hidden;
 }
 
+.editor-left-docs {
+  width: 260px;
+  flex: 0 0 260px;
+}
+
+.editor-left-docs .sidebar {
+  position: relative;
+  top: unset;
+  height: auto;
+  height: calc(100vh - 70px);
+}
+
+.editor-left-docs .sidebar {
+  height: 100%;
+}
+
 /* ============================================
    TEXTAREA (ÉDITEUR DE TEXTE)
    ============================================ */
@@ -142,37 +158,57 @@
   margin-bottom: 1rem;
 }
 
-/* Liste des utilisateurs */
-.users-list {
+/* Barre des utilisateurs */
+.users-bar {
   display: flex;
-  flex-direction: column;
   gap: 0.75rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 0.25rem 0;
+  margin-bottom: 0.75rem;
 }
 
-.user-item {
+.users-bar::-webkit-scrollbar {
+  height: 8px;
+}
+
+.users-bar::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.7);
+  border-radius: 999px;
+}
+
+.users-bar-empty {
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.users-bar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  background-color: rgba(51, 65, 85, 0.25);
+  border: 1px solid rgba(71, 85, 105, 0.35);
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.users-bar-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background-color: rgba(51, 65, 85, 0.3);
-  border-radius: 6px;
-  transition: background-color 0.3s;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
 }
 
-.user-item:hover {
-  background-color: rgba(51, 65, 85, 0.5);
-}
-
-.user-indicator {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.user-name {
+.users-bar-name {
   color: #e2e8f0;
   font-size: 0.95rem;
 }
+
 
 /* Stats du document */
 .document-stats {

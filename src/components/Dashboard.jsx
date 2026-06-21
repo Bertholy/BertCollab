@@ -15,6 +15,9 @@ import { fetchGroups, createGroup, deleteGroup } from '../services/groupService.
 // NOUVEAU: Import du composant Editor
 // ============================================
 import Editor from './Editor';
+import AppHeader from './AppHeader';
+import Sidebar from './Sidebar';
+
 export default function Dashboard({ user, onLogout, groupId, groupName, onBack }) {
 
   // État pour stocker la liste des groupes
@@ -23,7 +26,17 @@ export default function Dashboard({ user, onLogout, groupId, groupName, onBack }
 // ============================================
 // Au lieu de stocker les groupes en dur,
 // on les récupère de la base de données
-const [groups, setGroups] = useState([]);
+const getCachedGroups = () => {
+  try {
+    const saved = localStorage.getItem('bertcollab_groups');
+    return saved ? JSON.parse(saved) : [];
+  } catch (err) {
+    console.error('Erreur lecture groups localStorage:', err);
+    return [];
+  }
+};
+
+const [groups, setGroups] = useState(getCachedGroups);
 
 // ============================================
 // NOUVEAU: Charger les groupes au démarrage
@@ -31,15 +44,12 @@ const [groups, setGroups] = useState([]);
 // useEffect se déclenche quand le composant se charge
 // C'est là qu'on va chercher les groupes dans Supabase
 
-
 useEffect(() => {
-  // Fonction pour charger les groupes
   const loadGroups = async () => {
     const data = await fetchGroups();
     setGroups(data);
   };
   
-  // Charger les groupes dès que le composant se load
   loadGroups();
 }, []); // [] = charger une seule fois au démarrage
   // État pour afficher/cacher le formulaire de création
@@ -51,71 +61,114 @@ useEffect(() => {
 // selectedGroupId = null → on affiche le Dashboard
 // selectedGroupId = ID → on affiche l'Editor pour ce groupe
 const [selectedGroupId, setSelectedGroupId] = useState(null);
+
+// ============================================
+// NOUVEAU: Amis connectés (Sidebar)
+// ============================================
+const [connectedFriends, setConnectedFriends] = useState([]);
+const [showFriends, setShowFriends] = useState(false);
+
 // ============================================
 // NOUVEAU: Initialiser Socket.io au démarrage
 // ============================================
 React.useEffect(() => {
   // Connecter à Socket.io
   const socket = connectSocket();
+  window.socketInstance = socket;
   
   // Écouter les créations de groupes des autres utilisateurs
   socket.on('group-created', (data) => {
-    // Un autre utilisateur a créé un groupe
-    setGroups([...groups, data.group]);
+    setGroups((prevGroups) => [...prevGroups, data.group]);
   });
   
   // Écouter les suppressions de groupes des autres utilisateurs
   socket.on('group-deleted', (data) => {
-    // Un autre utilisateur a supprimé un groupe
-    setGroups(groups.filter(g => g.id !== data.groupId));
+    setGroups((prevGroups) => prevGroups.filter(g => g.id !== data.groupId));
   });
-}, []);
+
+  // (presence) listener update-user-list déplacé dans un useEffect dépendant du groupId
+  // pour rejoindre/quit la room au bon moment.
+
+  return () => {
+    if (socket) {
+      socket.off('group-created');
+      socket.off('group-deleted');
+      socket.off('update-user-list');
+      socket.disconnect();
+      window.socketInstance = null;
+    }
+  };
+  }, []);
+
+  // ============================================
+  // Fake data amis connectés pour la sidebar
+  // (On supprime la présence Socket côté sidebar)
+  // ============================================
+  useEffect(() => {
+    const seed = String(selectedGroupId ?? '0');
+    const names = ['Alice', 'Yanis', 'Mina', 'Samir', 'Sara', 'Léo', 'Nora', 'Karim'];
+    const colors = ['#4f46e5', '#06b6d4', '#22c55e', '#f97316', '#e11d48', '#a855f7'];
+
+    const offset = seed.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % names.length;
+    const rotated = [...names.slice(offset), ...names.slice(0, offset)];
+
+    const fake = rotated.slice(0, 4).map((name, idx) => ({
+      id: `fake_${seed}_${idx}`,
+      name,
+      color: colors[idx % colors.length],
+    }));
+
+    setConnectedFriends(fake);
+  }, [selectedGroupId]);
+
+
   // État pour les données du formulaire
   const [formData, setFormData] = useState({ name: '', type: 'public' });
+
 
   // Fonction pour créer un nouveau groupe
 // ============================================
 const handleCreateGroup = async (e) => {
   e.preventDefault();
-  
-  if (formData.name.trim()) {
-    const newGroupData = {
-      name: formData.name,
-      type: formData.type,
-      creator_id: null,
-    };
-    
+
+  console.log('handleCreateGroup called', { formData, user });
+
+  if (!formData.name.trim()) {
+    alert('Le nom du groupe est requis.');
+    return;
+  }
+
+  const newGroupData = {
+    name: formData.name,
+    type: formData.type,
+    creator_id: user?.id ?? null,
+  };
+
+  try {
+    console.log('Envoi createGroup ->', newGroupData);
     const createdGroup = await createGroup(newGroupData);
-    
-    if (createdGroup) {
-      setGroups([...groups, createdGroup]);
-      
-      // NOUVEAU: Notifier les autres utilisateurs
-      const socket = window.socketInstance;
-      if (socket) {
-        socket.emit('group-created', { group: createdGroup });
-      }
-      
-      setFormData({ name: '', type: 'public' });
-      setShowForm(false);
+    console.log('createGroup response ->', createdGroup);
+
+    if (!createdGroup) {
+      alert('Erreur lors de la création du groupe. Vérifie la console pour plus de détails.');
+      return;
     }
+
+    setGroups((prevGroups) => [...prevGroups, createdGroup]);
+
+    const socket = window.socketInstance;
+    if (socket) {
+      socket.emit('group-created', { group: createdGroup });
+    }
+
+    setFormData({ name: '', type: 'public' });
+    setShowForm(false);
+  } catch (err) {
+    console.error('Erreur createGroup:', err);
+    alert('Erreur lors de la création du groupe (voir console).');
   }
 };
 
-
-// ============================================
-// MI RAFRAICHIRE PAGE ISAKA 1 SECONDE
-// ============================================
-React.useEffect(() => {
-  const interval = setInterval(async () => {
-    const data = await fetchGroups();
-    setGroups(data);
-  }, 1000);  // 5000 millisecondes = 5 secondes
-  
-  
-  
-  return () => clearInterval(interval);
-}, []);
 
   // Fonction pour supprimer un groupe
   // ============================================
@@ -123,9 +176,9 @@ React.useEffect(() => {
 // ============================================
 const handleDeleteGroup = async (id) => {
   const success = await deleteGroup(id);
-  
+SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS  
   if (success) {
-    setGroups(groups.filter(g => g.id !== id));
+    setGroups((prev) => prev.filter((g) => g.id !== id));
     
     // NOUVEAU: Notifier les autres utilisateurs
     const socket = window.socketInstance;
@@ -163,27 +216,28 @@ if (selectedGroupId !== null && selectedGroup) {
       groupId={selectedGroupId}
       groupName={selectedGroup.name}
       onBack={handleBackFromEditor}
+      user={user}
     />
   );
 }
   return (
     <div className="container">
-      {/* NAVBAR */}
-      <nav className="navbar">
-        <div className="navbar-content">
-          <div className="navbar-left">
-            <div className="logo">B</div>
-            <h1 className="app-title">BertCollab</h1>
-          </div>
-          <button className="logout-btn" onClick={onLogout}>
-            <span>🚪</span> Déconnexion
-          </button>
-        </div>
-      </nav>
+      <AppHeader user={user} onLogout={onLogout} />
 
-      {/* CONTENU PRINCIPAL */}
-      <div className="main-content">
-        
+      <div className="dashboard-layout">
+        <div className="sidebar-column">
+          {/* Barre latérale */}
+          <Sidebar
+            connectedFriends={connectedFriends}
+            showFriends={showFriends}
+            onToggleFriends={() => setShowFriends((v) => !v)}
+          />
+
+        </div>
+
+        {/* CONTENU PRINCIPAL */}
+        <div className="main-column">
+
         {/* HEADER */}
         <div className="header">
           <h2 className="page-title">Mes Groupes de Collaboration</h2>
@@ -285,10 +339,10 @@ if (selectedGroupId !== null && selectedGroup) {
               {/* Infos du groupe */}
               <div className="card-body">
                 <div className="group-info">
-                  <span>👥 {group.members} membre{group.members > 1 ? 's' : ''}</span>
+                  <span>👥 {group.members ?? 0} membre{(group.members ?? 0) > 1 ? 's' : ''}</span>
                 </div>
                 <div className="group-info">
-                  <span>📄 {group.documents} document{group.documents !== 1 ? 's' : ''}</span>
+                  <span>📄 {group.documents ?? 0} document{(group.documents ?? 0) !== 1 ? 's' : ''}</span>
                 </div>
               </div>
 
@@ -312,6 +366,7 @@ if (selectedGroupId !== null && selectedGroup) {
             <p>Aucun groupe pour le moment. Créez-en un pour commencer!</p>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

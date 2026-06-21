@@ -83,9 +83,14 @@ export default function Auth({ onLogin }) {
         
         {/* LOGO */}
         <div className="auth-logo">
-          <div className="logo-box">B</div>
-          <h1>BertCollab</h1>
+          <div className="auth-brand" aria-label="BertCollab">
+            <div className="auth-brand-logo" aria-hidden="true">
+              <span className="auth-brand-bc">BC</span>
+            </div>
+            <div className="auth-brand-name">BertCollab</div>
+          </div>
         </div>
+
 
         {/* TITRE */}
         <h2 className="auth-title">

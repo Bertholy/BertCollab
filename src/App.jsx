@@ -1,32 +1,49 @@
-import React, { useState, useEffect } from 'react';  // ← Ajoute useEffect!
+import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
-import Auth from './components/Auth';  // ← Tu as oublié Auth!
-import './App.css';  // ← Tu as oublié App.css!
+import Auth from './components/Auth';
+import './App.css';
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  
-  // ← Tu as oublié le useEffect pour charger l'utilisateur!
-  useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('currentUser');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      // Sécurité: si l'objet n'a pas les champs attendus, on le considère comme non connecté
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (!parsed.id || (!parsed.username && !parsed.email)) return null;
+      return parsed;
+    } catch (err) {
+      console.error('Erreur lecture currentUser:', err);
+      return null;
     }
-  }, []);
+  });
 
-  // ← Tu as oublié handleLogin!
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('currentUser', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('currentUser');
+    }
+  }, [user]);
+
   const handleLogin = (userData) => {
     setUser(userData);
-    localStorage.setItem('currentUser', JSON.stringify(userData));
+    try {
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+    } catch (err) {
+      console.error('Erreur sauvegarde currentUser:', err);
+    }
   };
 
-  // ← Tu as oublié handleLogout!
-const handleLogout = () => {
-  console.log('handleLogout appelé!');  // ← Ajoute ça
-  setUser(null);
-  localStorage.removeItem('currentUser');
-  alert('Vous avez été déconnecté!');
-};
+  const handleLogout = () => {
+    setUser(null);
+    try {
+      localStorage.removeItem('currentUser');
+    } catch (err) {
+      console.error('Erreur suppression currentUser:', err);
+    }
+  };
 
   return (
     <div className="app">

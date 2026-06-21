@@ -2,38 +2,45 @@
    AUTH CONTAINER - Conteneur principal de toute la page
    ============================================ */
 .auth-container {
-  /* Dimension: plein écran */
-  width: 100vw;              /* vw = viewport width (largeur de l'écran) */
-  height: 100vh;             /* vh = viewport height (hauteur de l'écran) */
-  
-  /* Centrer le contenu */
-  display: flex;             /* Utiliser flexbox */
-  justify-content: center;   /* Centrer horizontalement */
-  align-items: center;       /* Centrer verticalement */
-  
-  /* Dégradé de fond (bleu au violet) */
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  
-  /* Pas de scroll */
+  width: 100vw;
+  height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Fond moins lumineux (plus sombre + contraste) */
+  background:
+    radial-gradient(circle at 15% 10%, rgba(59, 130, 246, 0.16) 0%, rgba(0,0,0,0) 55%),
+    radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.14) 0%, rgba(0,0,0,0) 60%),
+    linear-gradient(135deg, #0b1220 0%, #0f172a 45%, #111827 100%);
+
+
   overflow: hidden;
 }
 
+
 /* ============================================
-   AUTH CARD - La boîte blanche avec le formulaire
+   AUTH CARD - Carte translucide (glassmorphism)
    ============================================ */
 .auth-card {
   /* Dimension */
-  width: 100%;               /* Prendre toute la largeur disponible */
-  max-width: 400px;          /* Mais pas plus de 400px */
-  padding: 3rem 2rem;        /* Espace intérieur: 3rem haut/bas, 2rem gauche/droite */
-  
-  /* Couleur et bordure */
-  background: white;         /* Fond blanc */
-  border-radius: 16px;       /* Coins arrondi */
-  
-  /* Ombre pour la profondeur */
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  
+  width: 100%;
+  max-width: 400px;
+  padding: 3rem 2rem;
+
+  /* Carte translucide */
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  /* Bordure glass */
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  /* Ombre plus douce (sur fond sombre) */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+
   /* Animation d'apparition */
   animation: slideUp 0.5s ease-out;
 }
@@ -51,57 +58,66 @@
 }
 
 /* ============================================
-   AUTH LOGO - Le logo "B" et le titre
+   AUTH LOGO - Brand cohérente avec le dashboard
    ============================================ */
 .auth-logo {
-  /* Centrer */
   text-align: center;
-  margin-bottom: 2rem;       /* Espace en bas */
-  
-  /* Utiliser flexbox pour aligner */
+  margin-bottom: 2rem;
   display: flex;
-  flex-direction: column;    /* Disposer verticalement */
-  align-items: center;       /* Centrer */
-  gap: 0.5rem;               /* Espace entre le logo et le titre */
-}
-
-/* La boîte du logo (petit carré bleu) */
-.logo-box {
-  /* Dimension (carré) */
-  width: 60px;
-  height: 60px;
-  
-  /* Centrer le "B" dedans */
-  display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  
-  /* Fond avec dégradé bleu→violet */
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  
-  /* Le "B" en blanc */
-  color: white;
-  
-  /* Police du "B" */
-  font-size: 32px;           /* Gros */
-  font-weight: bold;         /* Gras */
-  
-  /* Coins arrondis */
-  border-radius: 12px;
 }
 
-/* Le titre "BertCollab" */
-.auth-logo h1 {
-  /* Police */
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.auth-brand-logo {
+  width: 62px;
+  height: 62px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 900;
+  font-size: 1.05rem;
+  position: relative;
+  box-shadow: 0 18px 40px rgba(59, 130, 246, 0.25);
+}
+
+.auth-brand-bc {
+  position: absolute;
+  top: 7px;
+  right: 9px;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.98);
+}
+
+/* petite touche "collaboration" */
+.auth-brand-logo::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-left: -10px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 10px 0 0 rgba(255, 255, 255, 0.55);
+}
+
+.auth-brand-name {
   font-size: 24px;
-  font-weight: 700;          /* Extra-gras */
-  
-  /* Couleur grise foncée */
-  color: #333;
-  
-  /* Pas de marge par défaut */
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1;
   margin: 0;
 }
+
 
 /* ============================================
    AUTH TITLE - "Se connecter" ou "S'inscrire"
@@ -109,14 +125,14 @@
 .auth-title {
   /* Police */
   font-size: 20px;
-  font-weight: 600;          /* Semi-gras */
-  
-  /* Couleur grise foncée */
-  color: #333;
-  
+  font-weight: 600;
+
+  /* Texte clair */
+  color: rgba(255, 255, 255, 0.92);
+
   /* Marge */
-  margin: 0 0 1.5rem 0;      /* 1.5rem en bas */
-  
+  margin: 0 0 1.5rem 0;
+
   /* Centrer le texte */
   text-align: center;
 }
@@ -145,40 +161,43 @@
 .form-label {
   /* Police */
   font-size: 14px;
-  font-weight: 600;          /* Semi-gras */
-  
-  /* Couleur grise */
-  color: #555;
+  font-weight: 600;
+
+  /* Texte clair */
+  color: rgba(255, 255, 255, 0.88);
 }
 
 /* Le champ d'entrée (input) */
 .form-input {
   /* Dimension */
-  width: 100%;               /* Prendre toute la largeur */
-  padding: 12px;             /* Espace intérieur */
-  
-  /* Bordure */
-  border: 2px solid #e0e0e0;  /* Grise et fine */
-  border-radius: 8px;         /* Coins un peu arrondis */
-  
+  width: 100%;
+  padding: 12px;
+
+  /* Bordure glass */
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+
+  /* Fond translucide */
+  background: rgba(2, 6, 23, 0.18);
+  color: rgba(255, 255, 255, 0.94);
+
   /* Police */
   font-size: 14px;
-  font-family: inherit;      /* Utiliser la même police que le reste */
-  
+  font-family: inherit;
+
   /* Transition smooth quand on focus */
   transition: all 0.3s ease;
 }
 
 /* Quand on clique dans le champ (focus) */
 .form-input:focus {
-  /* Enlever le outline par défaut du navigateur */
   outline: none;
-  
-  /* Bordure devient bleue */
-  border-color: #667eea;
-  
+
+  /* Bordure plus visible */
+  border-color: rgba(102, 126, 234, 0.9);
+
   /* Ombre bleue légère */
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18);
 }
 
 /* ============================================
@@ -231,56 +250,38 @@
    AUTH FOOTER - Le lien "S'inscrire" ou "Se connecter"
    ============================================ */
 .auth-footer {
-  /* Centrer */
   text-align: center;
-  
-  /* Marge du haut */
   margin-top: 1.5rem;
-  
-  /* Bordure grise en haut */
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
   padding-top: 1.5rem;
 }
 
 /* Le texte "Pas de compte?" */
 .auth-text {
-  /* Police */
   font-size: 14px;
-  
-  /* Couleur grise */
-  color: #666;
-  
-  /* Pas de marge */
+  color: rgba(255, 255, 255, 0.82);
   margin: 0;
 }
 
 /* Le lien "S'inscrire" ou "Se connecter" */
 .auth-link {
-  /* Police */
   font-size: 14px;
-  font-weight: 600;          /* Semi-gras */
-  
-  /* Couleur bleu */
-  color: #667eea;
-  
-  /* Pas de bouton par défaut */
+  font-weight: 600;
+
+  color: rgba(102, 126, 234, 0.95);
+
   border: none;
   background: none;
-  
-  /* Cursor pointer */
   cursor: pointer;
-  
-  /* Underline */
+
   text-decoration: underline;
-  
-  /* Transition smooth */
+
   transition: color 0.3s ease;
 }
 
 /* Quand on survole le lien */
 .auth-link:hover {
-  /* Couleur plus foncée (violet) */
-  color: #764ba2;
+  color: rgba(160, 110, 255, 0.95);
 }
 
 /* ============================================
@@ -288,10 +289,9 @@
    ============================================ */
 @media (max-width: 600px) {
   .auth-card {
-    /* Prendre plus d'espace en largeur */
     width: 90%;
     max-width: none;
-    padding: 2rem 1.5rem;     /* Padding plus petit */
+    padding: 2rem 1.5rem;
   }
   
   .auth-logo h1 {
