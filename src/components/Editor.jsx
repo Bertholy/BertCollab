@@ -34,7 +34,32 @@ export default function Editor({ groupId, groupName, onBack, user }) {
   const [documentId, setDocumentId] = useState(null);
   const [documentContent, setDocumentContent] = useState('');
 
-  // Presence (fake data uniquement pour la démo)
+  // Presence (placeholder pour la démo)
+  // IMPORTANT: le nom affiché ne doit pas dépendre d'un état “changeant” après refresh.
+  // On fixe le pseudo utilisateur via un identifiant stable (id) stocké en cache.
+  const stableSelf = useMemo(() => {
+    const userId = user?.id ?? user?.email ?? 'anonymous';
+    const cacheKey = `bertcollab_user_display_${userId}`;
+
+    try {
+      const saved = localStorage.getItem(cacheKey);
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+
+    const displayName = user?.username || user?.email || 'Anonyme';
+    const value = { id: userId, name: displayName };
+
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(value));
+    } catch {
+      // ignore
+    }
+
+    return value;
+  }, [user]);
+
   const users = useMemo(() => {
     // Seed simple basé sur groupId pour que la liste soit cohérente par groupe
     const seed = String(groupId ?? '0');
@@ -51,11 +76,23 @@ export default function Editor({ groupId, groupName, onBack, user }) {
     const offset = seed.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % base.length;
     const rotated = [...base.slice(offset), ...base.slice(0, offset)];
 
-    return rotated.slice(0, 3).map((u, idx) => ({
+    // On remplace un slot par l'utilisateur courant (nom stable)
+    const list = rotated.slice(0, 3).map((u, idx) => ({
       ...u,
       color: colors[idx % colors.length],
     }));
-  }, [groupId]);
+
+    if (stableSelf?.name) {
+      const idxToReplace = 0; // stable
+      list[idxToReplace] = {
+        id: stableSelf.id,
+        name: stableSelf.name,
+        color: list[idxToReplace]?.color ?? colors[0],
+      };
+    }
+
+    return list;
+  }, [groupId, stableSelf]);
 
 
   // Throttle
@@ -74,11 +111,13 @@ export default function Editor({ groupId, groupName, onBack, user }) {
   // Sync entre onglets (fallback)
   useEffect(() => {
     const handleStorageUpdate = (event) => {
-      if (event.key !== `doc_sync_${groupId}` || !event.newValue) return;
+      const expectedPrefix = `doc_sync_${groupId}_`;
+      if (!event.key?.startsWith(expectedPrefix) || !event.newValue) return;
 
       try {
         const payload = JSON.parse(event.newValue);
-        if (payload?.roomId === groupId) {
+        // Synchroniser seulement si on est sur le même document actif
+        if (payload?.roomId === groupId && (payload?.documentId ?? null) === (activeDocumentId ?? null)) {
           setDocumentContent(payload.content ?? '');
         }
       } catch (err) {
@@ -88,7 +127,7 @@ export default function Editor({ groupId, groupName, onBack, user }) {
 
     window.addEventListener('storage', handleStorageUpdate);
     return () => window.removeEventListener('storage', handleStorageUpdate);
-  }, [groupId]);
+  }, [groupId, activeDocumentId]);
 
   // Charger la liste des documents du groupe
   useEffect(() => {
@@ -167,9 +206,9 @@ export default function Editor({ groupId, groupName, onBack, user }) {
 
     socket?.on('text-update', handleTextUpdate);
 
-    // On rejoint la salle pour recevoir les updates de texte,
-    // mais on n'utilise plus la liste d'utilisateurs.
-    joinRoom(groupId, user?.username);
+    // On rejoint la salle pour recevoir les updates de texte.
+    // On envoie aussi user (id + username) pour éviter le bug après refresh.
+    joinRoom(groupId, user);
 
     return () => {
       socket?.off('text-update', handleTextUpdate);
@@ -219,18 +258,22 @@ export default function Editor({ groupId, groupName, onBack, user }) {
     const newContent = e.target.value;
     setDocumentContent(newContent);
 
-    // cache + sync fallback
+    // cache + sync fallback (AJOUT: synchronisation onglets basée sur document)
     localStorage.setItem(localKey, newContent);
+    const syncKey = `doc_sync_${groupId}_${activeDocumentId ?? 'none'}`;
     localStorage.setItem(
-      `doc_sync_${groupId}`,
-      JSON.stringify({ roomId: groupId, content: newContent, timestamp: Date.now() })
+      syncKey,
+      JSON.stringify({ roomId: groupId, documentId: activeDocumentId ?? null, content: newContent, timestamp: Date.now() })
     );
 
-    // socket: throttle simple
-    if (newContent !== lastSentContentRef.current) {
-      lastSentContentRef.current = newContent;
-      sendTextUpdate(groupId, newContent);
-    }
+      // socket: throttle simple
+      if (newContent !== lastSentContentRef.current) {
+        lastSentContentRef.current = newContent;
+        // IMPORTANT: garder la synchro “comme avant” côté socket.
+        // On n'ajoute PAS documentId au protocole socket.
+        // Le filtrage onglets se fait via le fallback localStorage.
+        sendTextUpdate(groupId, newContent);
+      }
 
     // Supabase save: throttle + si documentId OK
     if (!documentId) return;

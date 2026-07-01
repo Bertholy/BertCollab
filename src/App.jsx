@@ -6,7 +6,7 @@ import './App.css';
 export default function App() {
   const [user, setUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('currentUser');
+      const saved = sessionStorage.getItem('currentUser');
       if (!saved) return null;
       const parsed = JSON.parse(saved);
       // Sécurité: si l'objet n'a pas les champs attendus, on le considère comme non connecté
@@ -21,16 +21,16 @@ export default function App() {
 
   useEffect(() => {
     if (user) {
-      localStorage.setItem('currentUser', JSON.stringify(user));
+      sessionStorage.setItem('currentUser', JSON.stringify(user));
     } else {
-      localStorage.removeItem('currentUser');
+      sessionStorage.removeItem('currentUser');
     }
   }, [user]);
 
   const handleLogin = (userData) => {
     setUser(userData);
     try {
-      localStorage.setItem('currentUser', JSON.stringify(userData));
+      sessionStorage.setItem('currentUser', JSON.stringify(userData));
     } catch (err) {
       console.error('Erreur sauvegarde currentUser:', err);
     }
@@ -39,7 +39,7 @@ export default function App() {
   const handleLogout = () => {
     setUser(null);
     try {
-      localStorage.removeItem('currentUser');
+      sessionStorage.removeItem('currentUser');
     } catch (err) {
       console.error('Erreur suppression currentUser:', err);
     }

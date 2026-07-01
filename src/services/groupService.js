@@ -32,27 +32,18 @@ const saveLocalGroups = (groups) => {
 // ============================================
 // FONCTION 1: RÉCUPÉRER TOUS LES GROUPES
 // ============================================
+export const fetchGroupsFromSupabaseOnly = async () => {
+  const { data, error } = await supabaseClient
+    .from('groups')
+    .select('*');
+
+  if (error) throw error;
+  return data ?? [];
+};
+
+// Gardé pour compatibilité (utilise Supabase-only pour éviter la divergence onglets)
 export const fetchGroups = async () => {
-  try {
-    const { data, error } = await supabaseClient
-      .from('groups')
-      .select('*');
-
-    if (error) {
-      console.warn('Supabase fetchGroups failed, fallback to localStorage', error);
-      return getLocalGroups();
-    }
-
-    if (!data) {
-      return getLocalGroups();
-    }
-
-    saveLocalGroups(data);
-    return data;
-  } catch (err) {
-    console.warn('Erreur fetchGroups, fallback to localStorage :', err);
-    return getLocalGroups();
-  }
+  return fetchGroupsFromSupabaseOnly();
 };
 
 // ============================================

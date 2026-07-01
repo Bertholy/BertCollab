@@ -66,8 +66,8 @@ export default function Auth({ onLogin }) {
       createdAt: new Date(),
     };
 
-    // Sauvegarder l'utilisateur dans localStorage
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    // Sauvegarder l'utilisateur dans sessionStorage (isolé par onglet)
+    sessionStorage.setItem('currentUser', JSON.stringify(user));
 
     // Appeler onLogin() pour dire "l'utilisateur est connecté!"
     onLogin(user);

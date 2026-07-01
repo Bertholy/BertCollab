@@ -9,7 +9,8 @@ import { connectSocket, onTextUpdate } from '../services/socketService';
 // ============================================
 // groupService contient les fonctions pour
 // récupérer/créer/supprimer des groupes
-import { fetchGroups, createGroup, deleteGroup } from '../services/groupService.js';
+import { fetchGroupsFromSupabaseOnly, createGroup, deleteGroup } from '../services/groupService.js';
+
 
 // ============================================
 // NOUVEAU: Import du composant Editor
@@ -36,7 +37,7 @@ const getCachedGroups = () => {
   }
 };
 
-const [groups, setGroups] = useState(getCachedGroups);
+const [groups, setGroups] = useState(() => getCachedGroups());
 
 // ============================================
 // NOUVEAU: Charger les groupes au démarrage
@@ -44,11 +45,11 @@ const [groups, setGroups] = useState(getCachedGroups);
 // useEffect se déclenche quand le composant se charge
 // C'est là qu'on va chercher les groupes dans Supabase
 
-useEffect(() => {
-  const loadGroups = async () => {
-    const data = await fetchGroups();
-    setGroups(data);
-  };
+  useEffect(() => {
+    const loadGroups = async () => {
+      const data = await fetchGroupsFromSupabaseOnly();
+      setGroups(data);
+    };
   
   loadGroups();
 }, []); // [] = charger une seule fois au démarrage
@@ -76,14 +77,24 @@ React.useEffect(() => {
   const socket = connectSocket();
   window.socketInstance = socket;
   
-  // Écouter les créations de groupes des autres utilisateurs
-  socket.on('group-created', (data) => {
-    setGroups((prevGroups) => [...prevGroups, data.group]);
-  });
+    // Écouter les créations de groupes
+    socket.on('group-created', (data) => {
+      // Source of truth: Supabase
+      fetchGroupsFromSupabaseOnly()
+        .then(setGroups)
+        .catch(() => {});
+    });
+
   
   // Écouter les suppressions de groupes des autres utilisateurs
   socket.on('group-deleted', (data) => {
-    setGroups((prevGroups) => prevGroups.filter(g => g.id !== data.groupId));
+    if (!data?.groupId) return;
+    setGroups((prevGroups) => prevGroups.filter((g) => g.id !== data.groupId));
+
+    // Source of truth: Supabase
+    fetchGroupsFromSupabaseOnly()
+      .then(setGroups)
+      .catch(() => {});
   });
 
   // (presence) listener update-user-list déplacé dans un useEffect dépendant du groupId
@@ -99,6 +110,31 @@ React.useEffect(() => {
     }
   };
   }, []);
+
+  // ============================================
+  // NOUVEAU: Synchroniser groupes vers localStorage
+  // + Écouter les changements d'autres onglets
+  // ============================================
+  useEffect(() => {
+    // Sauvegarder les groupes dans localStorage
+    localStorage.setItem('bertcollab_groups', JSON.stringify(groups));
+    
+    // Écouter les changements de localStorage depuis d'autres onglets
+    const handleStorageChange = (e) => {
+      if (e.key === 'bertcollab_groups' && e.newValue) {
+        try {
+          const updatedGroups = JSON.parse(e.newValue);
+          console.log('📡 Synchronisation inter-onglets détectée, mise à jour des groupes');
+          setGroups(updatedGroups);
+        } catch (err) {
+          console.error('Erreur parsing localStorage:', err);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [groups]);
 
   // ============================================
   // Fake data amis connectés pour la sidebar
@@ -156,6 +192,9 @@ const handleCreateGroup = async (e) => {
 
     setGroups((prevGroups) => [...prevGroups, createdGroup]);
 
+    // Synchroniser immédiatement à localStorage pour inter-onglet
+    localStorage.setItem('bertcollab_groups', JSON.stringify([...groups, createdGroup]));
+
     const socket = window.socketInstance;
     if (socket) {
       socket.emit('group-created', { group: createdGroup });
@@ -176,11 +215,21 @@ const handleCreateGroup = async (e) => {
 // ============================================
 const handleDeleteGroup = async (id) => {
   const success = await deleteGroup(id);
-SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS  
+
   if (success) {
+    // UI: enlever immédiatement le groupe
     setGroups((prev) => prev.filter((g) => g.id !== id));
-    
-    // NOUVEAU: Notifier les autres utilisateurs
+
+    // Cache localStorage: synchroniser aussi pour éviter que le groupe “revienne” au refresh
+    try {
+      const cached = JSON.parse(localStorage.getItem('bertcollab_groups') || '[]');
+      const nextCached = (cached ?? []).filter((g) => g.id !== id);
+      localStorage.setItem('bertcollab_groups', JSON.stringify(nextCached));
+    } catch (err) {
+      console.warn('sync localStorage après deleteGroup failed', err);
+    }
+
+    // Notifier les autres utilisateurs
     const socket = window.socketInstance;
     if (socket) {
       socket.emit('group-deleted', { groupId: id });

@@ -57,7 +57,9 @@ app.get('/', (req, res) => {
 // ============================================
 // STOCKAGE DES UTILISATEURS PAR SALLE
 // ============================================
-const roomUsers = {}; // Structure: { roomId: { socketId: username } }
+// Stockage: { roomId: { socketId: { username, userId } } }
+// userId est utilisé pour éviter les incohérences au refresh.
+const roomUsers = {};
 
 // ============================================
 // QUAND UN UTILISATEUR SE CONNECTE
@@ -71,22 +73,46 @@ io.on('connection', (socket) => {
   // ============================================
   // Quand un utilisateur clique "Ouvrir le groupe"
   socket.on('join-room', (data) => {
-    const { roomId, username } = data;  // Récupérer l'ID du groupe et le pseudo
+    const { roomId, username, userId } = data;  // userId optionnel
     
     // Rejoindre la salle Socket.io
     socket.join(roomId);
     
     // Ajouter l'utilisateur à la salle
     if (!roomUsers[roomId]) roomUsers[roomId] = {};
-    roomUsers[roomId][socket.id] = username || 'Anonyme';
+    roomUsers[roomId][socket.id] = {
+      username: username || 'Anonyme',
+      userId: userId || null,
+    };
 
     console.log(`📍 ${socket.id} (${username}) a rejoint la salle ${roomId}`);
 
     // Préparer la liste structurée des utilisateurs
-    const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, name]) => ({ id, name }));
+    const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, user]) => ({
+      id,
+      name: user?.username ?? 'Anonyme',
+      userId: user?.userId ?? null,
+    }));
 
     // Envoyer la liste mise à jour à tout le monde dans la salle
     io.to(roomId).emit('update-user-list', usersInRoom);
+  });
+
+  // ============================================
+  // ÉVÉNEMENT: L'utilisateur crée un groupe
+  // (sync temps réel)
+  // ============================================
+  socket.on('group-created', (data) => {
+    // Broadcast à tous les clients (y compris l'émetteur)
+    io.emit('group-created', data);
+  });
+
+  // ============================================
+  // ÉVÉNEMENT: L'utilisateur supprime un groupe
+  // (sync temps réel)
+  // ============================================
+  socket.on('group-deleted', (data) => {
+    io.emit('group-deleted', data);
   });
 
   // ============================================
@@ -120,7 +146,11 @@ io.on('connection', (socket) => {
     if (roomUsers[roomId]) {
       delete roomUsers[roomId][socket.id];
       // Notifier les autres avec la liste mise à jour
-      const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, name]) => ({ id, name }));
+      const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, user]) => ({
+        id,
+        name: user?.username ?? 'Anonyme',
+        userId: user?.userId ?? null,
+      }));
       io.to(roomId).emit('update-user-list', usersInRoom);
     }
 
@@ -136,7 +166,11 @@ io.on('connection', (socket) => {
     for (const roomId in roomUsers) {
       if (roomUsers[roomId][socket.id]) {
         delete roomUsers[roomId][socket.id];
-        const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, name]) => ({ id, name }));
+        const usersInRoom = Object.entries(roomUsers[roomId]).map(([id, user]) => ({
+          id,
+          name: user?.username ?? 'Anonyme',
+          userId: user?.userId ?? null,
+        }));
         io.to(roomId).emit('update-user-list', usersInRoom);
       }
     }

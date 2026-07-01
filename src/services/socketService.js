@@ -50,10 +50,15 @@ export const connectSocket = (serverURL = 'http://localhost:3001') => {
 // ============================================
 // Quand tu ouvres un groupe, tu rejoins une "salle"
 // Tous les utilisateurs dans la même salle voient les mêmes changements
-export const joinRoom = (roomId, username) => {
+// NOTE: on ne passe plus uniquement le username (qui peut changer à l'écran)
+// mais un userId stable si disponible.
+export const joinRoom = (roomId, user) => {
   if (socket) {
-    // Envoyer un message au serveur: "Je rejoins cette salle"
-    socket.emit('join-room', { roomId, username });
+    const username = user?.username || user?.email || 'Anonyme';
+    const userId = user?.id ?? null;
+
+    // Envoyer au serveur un identifiant stable + le nom d'affichage
+    socket.emit('join-room', { roomId, username, userId });
     console.log(`📍 Rejoint la salle: ${roomId}`);
   }
 };
